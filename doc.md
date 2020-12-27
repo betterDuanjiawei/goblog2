@@ -132,8 +132,10 @@ func NewServeMux() *ServeMux { return new(ServeMux) }
     1. 不支持 url路径参数 /articles/2
     2. 不支持请求方法过滤  GET POST
     3. 不支持路由命名 路由命名是一种允许我们快速修改 URL的方式
-
-## strings.Split() strings.SplitN()
+* go 默认 http.ServMux; 
+* httpRouter 速度最快的路由器,被gin采用, 但是它不支持路由命名 高性能,路由功能相对来说简单的项目中,比如 api和微服务
+* gorilla/mux; 全栈的 web 开发中,功能强大
+## strings.Split() strings.SplitN() 
 * 有 N没 N,区别在于是否返回指定个数的切割字字符串. 没有 n默认传-1,代表全部返回
 ```
         //以str为分隔符，将s切分成多个子串，结果中**不包含**str本身。如果str为空则将s切分成Unicode字符列表。
@@ -143,6 +145,51 @@ func NewServeMux() *ServeMux { return new(ServeMux) }
 
 func Split(s, sep string) []string { return genSplit(s, sep, 0, -1) }
 func SplitN(s, sep string, n int) []string { return genSplit(s, sep, 0, n) }
+```
+
+## gorilla/mux 精准匹配 ; net/http 长度优先匹配
+* 精准匹配 指路由只会匹配准确指定的规则，这个比较好理解，也是较常见的匹配方式。 动态内容
+* 长度优先匹配 一般用在静态路由上（不支持动态元素如正则和 URL 路径参数），优先匹配字符数较多的规则。 静态内容
+```
+router.HandleFunc("/", defaultHandler)
+router.HandleFunc("/about", aboutHandler)
+使用 长度优先匹配 规则的 http.ServeMux 会把除了 /about 这个匹配的以外的所有 URI 都使用 defaultHandler 来处理。
+而使用 精准匹配 的 gorilla/mux 会把以上两个规则精准匹配到两个链接，/ 为首页，/about 为关于，除此之外都是 404 未找到。
+```
+* 使用
+```
+    router.NotFoundHandler = http.HandlerFunc(notFountHandler)
+	http.HandleFunc("/no-exits", notFountHandler)
+```
+
+## http.HandleFunc()  http.HandlerFunc()区别
+
+## gorilla/mux
+* 指定Methods()方法来区分请求
+```
+router.HandleFunc("/articles", articlesIndexHandler).Methods("GET").Name("articles.index")
+router.HandleFunc("/articles", articlesStoreHandler).Methods("POST").Name("articles.store")
+```
+* 请求路径参数和正则匹配
+```
+router.HandleFunc("/articles/{id:[0-9]+}", articlesShowHandler).Methods("GET").Name("articles.show")
+
+{id:[0-9]+} 限定了一个或者多个数字
+使用{name} 花括号来设置路径参数
+在有正则表达式的情况下,使用:区分,第一部分是名称,第二部分是正则表达式
+```
+* 获取请求路径参数
+```
+vars := mux.Vars(r)
+mux 提供的方法 mux.Vars(r)会将URL 路径参数解析为键值对应的Map;
+使用 vars["id"]的形式来读取
+```
+* 路由命名
+```
+router.HandleFunc("/", homeHandler).Methods("GET").Name("home")
+Name()方法来给路由命名,传参是路由的名称;通过这个名称来获取 URL
+homeURL, _ := router.Get("home").URL()
+articlesURL, _ := router.Get("articles.show").URL("id", 2)
 ```
 
 
