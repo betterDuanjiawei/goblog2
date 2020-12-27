@@ -77,6 +77,26 @@ GO111MODULE=on go get -u github.com/cosmtrek/air
 -u 强制使用网络去更新包和它的依赖包
 -v 显示执行的命令
 
+## Content-Type 标头
+* Content-Type 响应标头用于告诉客户端内容的类型,客户端再根据这个信息将内容正确的呈现给用户
+```
+text/html   HTML 文档
+text/plain  文本内容
+text/css    CSS 样式文件
+text/javascript JS 脚本文件
+application/json    JSON格式的数据
+application/xml     XML 格式的数据
+image/png       PNG图片
+```
+* Content-Type: text/plain; charset=utf-8
+* w.Header().Set() 设置 Content-Type的时候, 后面的参数是多个用;组合的,
+```
+w.Header().Set("Content-type", "text/html") // 错误,虽然显示的是html内容,但是编码有问题.
+w.Header().Set("Content-type", "text/html; charset=utf-8")
+```
+
+
+
 
 
 
