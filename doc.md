@@ -20,6 +20,7 @@ go get golang.org/x/tools/cmd/godoc
 * r.URL.Query() 获取用户参数
 * r.URL.Path    获取当前请求路径
 * r.Header.Get("User-Agent")    获取用户客户端信息
+* r.Method 获取当期请求的方式:GET POST
 
 ## w http.ResponseWriter 返回给用户的响应
 * w.WriterHeader(http.StatusInternalServerError) 返回状态码:500
@@ -107,9 +108,41 @@ w.Header().Set("Content-type", "text/html; charset=utf-8")
     4. 400~499: 客户端的请求有错误:404 请求的资源在 web 服务器中找不到;403 服务器拒绝客户的访问,一般是权限不够;499 服务端处理时间过长,客户端不耐烦了,关闭了
     5.500~599: 服务器内部错误 500
 
+## http.HandleFunc ServeMux DefaultServeMux
+* 
+```
+http.ListenAndServe(":3000", nil) // nil其实默认是 defaultServeMux
 
+func HandleFunc(pattern string, handler func(ResponseWriter, *Request)) {
+	DefaultServeMux.HandleFunc(pattern, handler)
+}
 
+// The handler is typically nil, in which case the DefaultServeMux is used.
+//
+// ListenAndServe always returns a non-nil error.
+func ListenAndServe(addr string, handler Handler) error {
+	server := &Server{Addr: addr, Handler: handler}
+	return server.ListenAndServe()
+}
 
+router := http.NewServeMux()
+func NewServeMux() *ServeMux { return new(ServeMux) }
+```
+* http.ServMux 缺点:
+    1. 不支持 url路径参数 /articles/2
+    2. 不支持请求方法过滤  GET POST
+    3. 不支持路由命名 路由命名是一种允许我们快速修改 URL的方式
 
+## strings.Split() strings.SplitN()
+* 有 N没 N,区别在于是否返回指定个数的切割字字符串. 没有 n默认传-1,代表全部返回
+```
+        //以str为分隔符，将s切分成多个子串，结果中**不包含**str本身。如果str为空则将s切分成Unicode字符列表。
+        //如果s中没有str子串，则将整个s作为[]string的第一个元素返回。
+        //参数n表示最多切分出几个子串，超出的部分将不再切分，最后一个n包含了所有剩下的不切分。
+        //如果n为0，则返回nil；如果n小于0，则不限制切分个数，全部切分
+
+func Split(s, sep string) []string { return genSplit(s, sep, 0, -1) }
+func SplitN(s, sep string, n int) []string { return genSplit(s, sep, 0, n) }
+```
 
 
