@@ -1,5 +1,32 @@
 # 学习笔记
+* goland 导入项目后import里的包报红
+[参考](https://blog.csdn.net/weixin_37719934/article/details/108399699)
+需要检查修改 goland设置里的 GOPATH和 GOMODULE
+* 由于要使用 air 自动重载工具,把自动保存关掉,但是不能把 unsafe的第一个选项也取消勾选了,要不然会无法自动加载新增和修改的文件和文件夹的
+[参考](http://www.lanrendemo.com/view/MTUxNQ.html)
+关闭自动保存并标记未保存的文件*号
+1、Preferences -> Appearance & Behavior -> System Settings，取消use safe等4个。(第一个不要取消勾选了)
+2、Preferences -> Editor -> General -> Editor Tabs 勾选 Mark modified(*)
+[设置 GoLand 保存时自动格式化](http://www.lanrendemo.com/view/MTUxNA.html)
+* [设置 GOPATH](https://studygolang.com/articles/17598)
+```
+错误写法:
+go env -w GOPATH="/Users/v_duanjiawei/go/src"
+warning: go env -w GOPATH=... does not override conflicting OS environment variable (不能覆盖 os系统的环境变量)
 
+Bash
+export $GOPATH=$HOME/go
+source ~/.bash_profile
+
+Zsh
+export $GOPATH=$HOME/go
+source ~/.zshrc
+
+set -x -U GOPATH $HOME/go
+-x 用来指定你要导出的变量  -U 设置成全局的环境
+
+go env GOPATH 查看路径
+```
 ## 2.舞台布置
 
 ### 2.2 Go Docs
@@ -191,5 +218,76 @@ Name()方法来给路由命名,传参是路由的名称;通过这个名称来获
 homeURL, _ := router.Get("home").URL()
 articlesURL, _ := router.Get("articles.show").URL("id", 2)
 ```
+* 加载中间件 使用 gorilla/mux 的 mux.Use()方法加载中间件
+```
+router.Use(forceHTMLMiddleware)
+
+func forceHTMLMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 设置标头
+		w.Header().Set("Content-Type", "text/html;charset=utf-8")
+		// 继续处理请求
+		next.ServeHTTP(w, r)
+	})
+}
+```
+
+
+## GOMODULE
+* go.mod go.sum 分别相当于 php的 composer.json 和 composer.lock
+* go.mod
+```
+module 当前项目也算一个module
+go 1.15  指定了最低的go 版本要求
+require () 项目所需依赖 // indirect 未使用的
+```
+* go.sum  保存着依赖包的版本和哈希值, 不仅会保存直接依赖包的哈希值,间接依赖的包的哈希值也会被保存
+```
+两种 hash值,前者为GO MODULES打包整个模块文件zip后再进行 hash值,而后者针对go.mod的hash
+go.sum是保证下载源码100%正确的重要依据.
+github.com/gorilla/mux v1.7.4 h1:VuZ8uybHlWmqV03+zRzdwKL4tUnIp1MAQtp1mIFE1bc=
+github.com/gorilla/mux v1.7.4/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
+```
+* go mod tidy 整理go module 依赖,会把未使用的modules移除掉
+* 源码包的存放位置: $GOPATH/pkg/mod
+* go clean -modcache 清空本地下载的 go module 缓存
+* 下载依赖,当执行go run 或 go build时候,go 会基于自动go.mod文件自动拉取依赖. go mod download 下载项目所需依赖
+* go module 命令
+```
+go mod init     生成 go.mod 文件
+go mod download 下载 go.mod中指明的所有依赖
+go mod tidy     整理现有依赖,清除未使用的
+go mod graph    查看现有的依赖结构
+go mod edit     编辑 go.mod 文件
+go mod vendor   导出项目的所以依赖到 vendor目录(生成的目录在当前项目目录下)
+go mod verify   校验一个模块是否被篡改过
+go mod why      查看为什么要依赖某个模块 // go mod why github.com/gorilla/mux  
+```
+* GO111MODULE 因为在 go 1.11版本添加,故命名为GO111MODULE
+```
+设置选项:GO111MODULE="on"
+auto: 1.11-1.15的默认值, 表示项目中有 go.mod 文件的话启用 go module
+on: 开启,未来会是默认值
+off: 关闭,不推荐
+```
+
+## GOPROXY 
+* GOPROXY 此变量用于设置 go模块代理,其作用是拉取源码时候能够脱离传统的VCS方式,直接通过镜像站点来快速拉取.
+* GOPROXY默认值:https://proxy.golang.org,direct;设置国内的代理模块:go env -w GOPROXY=https://goproxy.cn,direct
+* 加 direct表示:告诉 go get 抓取源码包时先尝试https://goproxy.cn,如果遇到404等错误,再尝试从源地址抓取
+* 设置值为 off,禁止在后续的操作使用任何go模块代理
+
+## GOSUMDB
+* go checksum database的缩写,用于在拉取模块版本时候,保证拉取到的模块代码包未见过篡改,若发现不一致将会立即停止
+* GOSUMDB="sum.golang.org" GOSUMDB可以被Go Module Proxy代理, goproxy.cn 同样支持代理 sum.golang.org
+* 可以设置off,会禁止在后续操作中校验模块哈希
+
+## GONOPROXY GONOSUMDB GOPRIVATE
+* 三个环境变量用在了私有模块
+* GONOPROXY 设置不走 go proxy 的 url规则
+* GONOSUMDB 设置不检查哈希的 URL规则
+* GOPRIVATE 设置私有模块的URL规则,会同时设置以上两个变量
+一般私有仓库,直接使用GOPRIVATE即可
+* go env -w GOPRIVATE="*.example.com" 使用通配符,example.com 的子域名都不走 go proxy 和go checksum database,但是这里不包括 example.com 本身
 
 
