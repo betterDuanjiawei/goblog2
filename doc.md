@@ -231,6 +231,12 @@ func forceHTMLMiddleware(next http.Handler) http.Handler {
 	})
 }
 ```
+* gorilla StrictSlash(value bool)
+```
+router.NewRouter().StrictSlash(true) 
+URL 校正301跳转,第二次会是没有/的 url,处理 get请求可以,但是处理 post请求,301跳转之后会变成 get请求
+```
+* gorilla执行顺序,先匹配路由,再执行中间件
 
 
 ## GOMODULE
@@ -289,5 +295,8 @@ off: 关闭,不推荐
 * GOPRIVATE 设置私有模块的URL规则,会同时设置以上两个变量
 一般私有仓库,直接使用GOPRIVATE即可
 * go env -w GOPRIVATE="*.example.com" 使用通配符,example.com 的子域名都不走 go proxy 和go checksum database,但是这里不包括 example.com 本身
+
+## strings.TrimSuffix(s, suffix string) string 函数,可以用来移除后缀
+
 
 

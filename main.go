@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-
 	"github.com/gorilla/mux"
+	"net/http"
+	"strings"
 )
 
 func main() {
@@ -28,12 +28,20 @@ func main() {
 	articleURL, _ := router.Get("articles.show").URL("id", "123")
 	fmt.Println("articleURL: ", articleURL)
 
-	http.ListenAndServe(":3000", router)
+	http.ListenAndServe(":3000", removeTrailingSlash(router))
 
 }
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", "text/html; charset=utf-8")
 	fmt.Fprint(w, "<h1>Hello, 欢迎来到 goblog</h1>")
+}
+func forceHTMLMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 设置标头
+		w.Header().Set("Content-Type", "text/html;charset=utf-8")
+		// 继续处理请求
+		next.ServeHTTP(w, r)
+	})
 }
 
 func aboutHandler(w http.ResponseWriter, r *http.Request) {
@@ -62,11 +70,11 @@ func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "创建新的文章")
 }
 
-func forceHTMLMiddleware(next http.Handler) http.Handler {
+func removeTrailingSlash(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 设置标头
-		w.Header().Set("Content-Type", "text/html;charset=utf-8")
-		// 继续处理请求
+		if r.URL.Path != "/" {
+			r.URL.Path = strings.TrimSuffix(r.URL.Path, "/")
+		}
 		next.ServeHTTP(w, r)
 	})
 }
