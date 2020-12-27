@@ -62,5 +62,21 @@ text	文本模板及 Token 词法器
 ## go 的字符连接符
 * go + ; php .; js + ; shell 没有,直接连接即可
 
+## air 自动重载
+* 安装
+```
+go env -w GOPROXY=https://goproxy.cn
+GO111MODULE=on go get -u github.com/cosmtrek/air
+```
+* tmp 文件目录用来存放编译后的文件,还有 build 错误日志:build-errors.log; 需要用.gitignore 忽略上传代码库
+
+## go get
+[参考](http://c.biancheng.net/view/123.html)
+* go get 一键获取代码 编译和安装
+-d 只下载不安装
+-u 强制使用网络去更新包和它的依赖包
+-v 显示执行的命令
+
+
 
 
