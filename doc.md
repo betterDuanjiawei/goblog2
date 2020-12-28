@@ -298,5 +298,12 @@ off: 关闭,不推荐
 
 ## strings.TrimSuffix(s, suffix string) string 函数,可以用来移除后缀
 
+## http.Request 的方法和字段
+* r *http.Request
+* r.ParseForm() 从请求中解析出请求参数,必须是执行完这段解析代码,后面的 r.Form 和 r.PostForm 才可以读取到数据
+* r.Form 存储了 post get put 参数,在使用之前需要调用 ParseForm 方法 比 r.PostForm 多了 URL参数里的数据  ?test=data
+* r.PostForm 存储了 post put 参数,在使用之前需要调用 ParseForm 方法
+* 如果不想获取所有的请求内容,而是逐个获取的话,无需使用 r.ParseForm()可以直接使用 r.FormValue() 和 r.PostFormValue() 方法获取数据
+
 
 
