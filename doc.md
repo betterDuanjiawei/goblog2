@@ -306,4 +306,10 @@ off: 关闭,不推荐
 * 如果不想获取所有的请求内容,而是逐个获取的话,无需使用 r.ParseForm()可以直接使用 r.FormValue() 和 r.PostFormValue() 方法获取数据
 
 
+## 统计字符串长度
+* len("中国") 6 len()可以用来统计字符串 切片 通道的长度,utf8一个汉字占用3个字节
+* utf8.RuneCountInString("中国") 2
+
+
+
 
