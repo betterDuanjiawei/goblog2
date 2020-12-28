@@ -423,6 +423,15 @@ template.New("test").Delims("{[", "]}").ParseFile("filename.gohtml")
 2. 关闭和创建连接都是耗费系统资源的操作
 3. 
 ```
+* db.Exec() 用来执行没有返回结果集的 sql语句, INSERT UPDATE DELETE CREATE等语句
+```
+func (db *DB) Exec(query string, args ...interface{}) (Result, error)
+
+type Result interface {
+    LastInsertId() (int64, error) // 使用INSERT 向数据库插入记录,数据表有自增 id时,该函数有返回值
+    RowsAffected() (int64, error) // 表示影响的数据表的行数
+} 
+```
 
 
 ## mysql驱动
