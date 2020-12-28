@@ -432,7 +432,34 @@ type Result interface {
     RowsAffected() (int64, error) // 表示影响的数据表的行数
 } 
 ```
+* 判断插入是否成功用 id, err = rs.lastInsertId() id >0 lastInsertID是否大于零来判断是否操作成功
+* Prepare()
+```
+stmt, err = db.Prepare("INSERT INTO articles (title, body) VALUES(?, ?)")
+会使用 sql连接向 mysql服务器发送一次请求,此方法返回一个*sql.Stmt指针对象
+用于不要相信用户提交过来的数据
+Prepare()语句时防止 sql注入攻击有效而且必要的手段
+Prepare()只会产生 stmt,真正执行请求需要调用 stmt.Exec()
+defer stmt.Close() 及时关闭sql连接时很有必要的
 
+```
+* stmt.Exec() 真正执行sql请求
+参数对应 db.Prepare()参数中的sql变量占位符?
+
+## strconv.FormatInt(lastInsertID, 10)
+* 将 int64的数字转换为字符串,第二个参数为10进制
+
+
+## 多变量声明方式
+```
+少写代码提供的简单方式
+var (
+    id  int64
+    err error
+    rs  sql.Result
+    stmt    *sql.Stmt
+)
+```
 
 ## mysql驱动
 * go get github.com/go-sql-driver/mysql
