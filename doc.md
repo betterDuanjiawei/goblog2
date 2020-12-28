@@ -401,10 +401,56 @@ template.New("test").Delims("{[", "]}").ParseFile("filename.gohtml")
 
 ## database/sql
 * database/sql 只提供了一套操作数据库的接口和规范, 可以用多种数据库驱动
+* var db *sql.DB 变量是包级别的,方便各个函数访问; sql.DB 结构体是 database/sql 封装的一个数据库对象,包含操作数据库的基本方法,通常我们把它理解为连接池对象
+* sql.SetMaxOpenConns( n) 设置最大连接数 <=0 无限制,默认为0
+```
+1. 高并发情况下设置为>=10,会比设置为1获得接近6倍的性能提升,10和0 高并发情况下,性能差距不明显
+2. show variables like 'max_connetions' 获取最大值,设置不能大于这个值,否则会报错:to many connections
+3. mysql8 默认是151
+4. 是系统的,如果是共享数据库,可以设置的小点
+```
+* sql.SetMaxIdleConns(n) 设置空闲连接数 <=0 不设置空闲连接数,默认为2
+```
+1. 高并发情况下,将值设置为>0,会比设置为0获得将近20倍的性能提升,因为设置为0的情况下,每一个 sql连接执行任务以后就销毁掉了,执行新任务时候又需要重新建立连接,
+很明显,重新建立连接是一个很消耗资源的过程
+2. 不能大于SetMaxOpenConns()的值,长时间打开大量的数据库连接需要占用大量的系统内存和 cpu资源
+3. wait_timeout 设置,超过这个时间就会被自动关闭,默认情况下是8小时,
+4. 不是越大越好,合理设置
+```
+* sql.SetConnMaxLifetime 设置最大过期时间
+```
+1. 该值越小,意味着关闭的越快,意味着更多的连接会被创建
+2. 关闭和创建连接都是耗费系统资源的操作
+3. 
+```
+
 
 ## mysql驱动
 * go get github.com/go-sql-driver/mysql
 * _ "github.com/go-sql-driver/mysql" 匿名导入的方式来记载驱动
+* mysql.Config{} 来生成 DSN信息
+```
+config := mysql.Config{
+    User:                 "homestead",
+    Passwd:               "secret",
+    Addr:                 "127.0.0.1:33060",
+    Net:                  "tcp",
+    DBName:               "goblog",
+    AllowNativePasswords: true,
+}
+```
+* sql.Open(drivername, dataSourceName string) (*sql.DB, error) 用来初始化返回一个*sql.DB结构体实例,
+传参:驱动名称 DSN信息,需要连接不同的数据库时候,修改驱动名和 DSN即可
+* 调用 sql.Open() 并未开始连接数据库,只是为连接数据库做好准备而已,所以我们一般会跟着一个db.Ping()来检测连接状态
+
+
+## DSN信息
+* DSN database source name 数据源信息,用于定义如何连接数据库,不同数据库的DSN格式是不同的, mysql 的格式
+```
+[username[:passwd]]@[protocol[(address)]]/dbname[?param1=value1&...&paramN=valueN]
+```
+* FormatDSN() 是mysql.Config 提供的用来生成 DSN信息的方法,打印结果如下:
+`root:123456@tcp(127.0.0.1:3306)/goblog?checkConnLiveness=false&maxAllowedPacket=0`
 
 
 ## init()
