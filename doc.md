@@ -310,6 +310,61 @@ off: 关闭,不推荐
 * len("中国") 6 len()可以用来统计字符串 切片 通道的长度,utf8一个汉字占用3个字节
 * utf8.RuneCountInString("中国") 2
 
+## html/template
+* html 代码字符串的写法
+```
+html := `
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<title>创建文章 —— 我的技术博客</title>
+		<style type="text/css">.error {color: red;}</style>
+	</head>
+	<body>
+		<form action="{{ .URL }}" method="post">
+			<p><input type="text" name="title" value="{{ .Title }}"></p>
+			{{ with .Errors.title }}
+				<p class="error">{{ . }}</p>
+			{{ end }}
+			<p><textarea name="body" cols="30" rows="10">{{ .Body }}}</textarea></p>
+			{{ with .Errors.body }}
+				<p class="error">{{ . }}</p>
+			{{ end }}
+			<p><button type="submit">提交</button></p>
+		</form>
+	</body>
+	</html>
+`
+		storeURL, _ := router.Get("articles.store").URL()
 
+		data := ArticlesFormData{
+			Title:  title,
+			Body:   body,
+			URL:    storeURL,
+			Errors: errors,
+		}
 
+		tmpl, err := template.New("create-form").Parse(html)
+		if err != nil {
+			panic(err)
+		}
+		tmpl.Execute(w, data)
+```
+* html文件的写法 template.ParseFiles("resources/views/articles/create.gohtml")
+```
+storeURL, _ := router.Get("articles.store").URL()
+
+		data := ArticlesFormData{
+			Title:  title,
+			Body:   body,
+			URL:    storeURL,
+			Errors: errors,
+		}
+
+		tmpl, err := template.ParseFiles("resources/views/articles/create.gohtml")
+		if err != nil {
+			panic(err)
+		}
+		tmpl.Execute(w, data)
+```
 
