@@ -445,6 +445,32 @@ defer stmt.Close() 及时关闭sql连接时很有必要的
 ```
 * stmt.Exec() 真正执行sql请求
 参数对应 db.Prepare()参数中的sql变量占位符?
+返回值时 sql.Result 对象,和 db.Exec() 返回的结果一样
+
+* QueryRow()
+```
+func (db *DB) QueryRow(query string, args ...interface{}) *Row
+参数为一个或者多个,参数只有一个的情况下:称为纯文本模式,参数为多个的情况下,称为 Prepare 模式
+
+db.QueryRow()
+func (db *DB) QueryRow(query string, args ...interface{}) *Row {
+	return db.QueryRowContext(context.Background(), query, args...)
+}
+
+stmt.QueryRow()
+func (s *Stmt) QueryRow(args ...interface{}) *Row {
+	return s.QueryRowContext(context.Background(), args...)
+}
+返回结果时一个指针变量
+```
+* Scan()
+```
+QueryRow() 会返回一个 sql.Row struct,链式调用的方式 QueryRow().Scan()  sql.Row.Scan()
+Scan()将查询结果赋值到 article struct中,传参应与数据表中的字段顺序一致
+sql.Row 是一个指针变量,保有 sql连接,当调用 Scan()时候会将连接释放,所以每次在 QueryRow()后使用Scan()时必须的.
+极其推荐这种链式调用的方式,养成良好的习惯避免掉进 sql连接不够用的坑
+```
+* sql.ErrNoRows Scan()发现没有数据返回时候,err == sql.ErrNoRows 是未找到数据而不是报错
 
 ## strconv.FormatInt(lastInsertID, 10)
 * 将 int64的数字转换为字符串,第二个参数为10进制
