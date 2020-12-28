@@ -367,4 +367,92 @@ storeURL, _ := router.Get("articles.store").URL()
 		}
 		tmpl.Execute(w, data)
 ```
+* 模板文件的后缀.gohtml 常见的其他后缀:.tmpl; .tpl; .gohtml;
+* 模板语法
+```
+{{ }} 双层大括号是默认的模板界定符号.用于在 html模板文件中界定模板语法
+{{ . }}语法 .表示当前的对象,当我们传入一个结构体对象时候,我们可以使用.来访问结构体对应的字段. 当我们传入的变量是 map时候,也可以在模板文件中通过.根据 key来取值
+with 关键字
+{{with pipeline}}}T1{{end}} 如果 pipeline 为空则不产生输出,否则将.设为 pipeline 的值并执行 T1,不修改外面的.
+{{ with pipeline }}T1{{ else }}T0 {{ end }} 如果 pipeline 为空则不改变.,并执行 T0,否则.设置为 pipeline 的值并执行 T1
+with 区块外, {{ . }} 代表传入模板的数据,而在 with区块内,则代表pipeline里的数据
+如:{{ with .Error.title }}这个区块中, {{ . }}代表 .Error.title
+
+pipeline 产生数据的操作, go的模板语法支持使用管道符号|连接多个命令
+
+注释: {{/*这是一个注释*/}} 执行的时候会忽略,可以多行,注释不能嵌套,而且必须紧贴临界符
+变量: 可以在模板中声明变量$variable := {{ . }} $variable是变量的名称,在后续的代码中可以使用该变量了
+移除空格: {{- .Name -}} {{- 移除模板内容左侧的所有空白符号, -}} 移除模板内容右侧的所有空白符号, -要紧挨{{ 和 }},和模板变量之间还有空格
+条件判断:
+{{ if pipeline }}T1{{ end }}
+{{ if pipeline }}T1 {{ else }} T0 {{ end }}
+{{ if pipeline }} T1 {{ else if pipeline }} T0 {{ end }}
+range遍历:
+{{ range pipeline }} T1 {{ end }} 如果 pipeline的长度为0,不会有任何输出
+{{ range pipeline }} T1 {{ else }} T0 {{ end }} 如果 pipeline的长度为0, 则会执行 T0
+修改默认标识符:
+防止和 vue angularJs 冲突,修改 go模板引擎默认的标识符号:
+template.New("test").Delims("{[", "]}").ParseFile("filename.gohtml")
+```
+
+## go 操作数据库方式
+* database/sql 用硬编码 sql语句来执行
+* ORM GORM 对象关系映射来的方式抽象的操作数据库
+
+## database/sql
+* database/sql 只提供了一套操作数据库的接口和规范, 可以用多种数据库驱动
+
+## mysql驱动
+* go get github.com/go-sql-driver/mysql
+* _ "github.com/go-sql-driver/mysql" 匿名导入的方式来记载驱动
+
+
+## init()
+[详解 Go 语言中的 init () 函数](https://learnku.com/go/t/47178)
+* init函数通常用于:
+    1. 变量初始化
+    2. 注册器 sql.Register()
+    3. 检查/修复状态
+    4. 运行计算
+* 包的初始化过程:
+    1. 初始化导入的包(递归导入)
+    2. 计算并为块中的变量分配初始值
+    3. 在包中执行初始化函数
+```
+package main
+import "fmt"
+var _ int64=s()
+func init(){
+  fmt.Println("init function --->")
+}
+func s() int64{
+  fmt.Println("function s() --->")
+  return 1
+}
+func main(){
+  fmt.Println("main --->")
+}
+
+function s() —>
+init function —>
+main —>
+```
+* 即使程序包被多次导入,也只需要初始化一次
+* init 不需要传入参数,也没有函数返回. 无法引用
+* init() 用于程序执行前包的初始化的函数
+如果只需要一个包的 init 函数,不需要这个包的其他方法,就可以用匿名导入的方式
+```
+mysql/driver.go
+func init() {
+    sql.Register("mysql", &MySQLDriver{})
+}
+
+特点:
+1 init函数是用于程序执行前做包的初始化的函数，比如初始化包里的变量等
+2 每个包可以拥有多个init函数,执行顺序是从上往下执行。  To ensure reproducible initialization behavior, build systems are encouraged to present multiple files belonging to the same package in lexical file name order to a compiler. 
+3 包的每个源文件也可以拥有多个init函数
+4 同一个包中多个init函数的执行顺序go语言没有明确的定义  （应该是顺序执行）
+5 不同包的init函数按照包导入的依赖关系决定该初始化函数的执行顺序
+6 init函数不能被其他函数调用，而是在main函数执行之前，自动被调用
+```
 
