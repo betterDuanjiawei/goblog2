@@ -843,6 +843,10 @@ method (*T) Parallel()
 // 可用于执行子测试
 method (*T) Run(name string, f func(t *T)) boolgit add .
 ```
+* 缓存的测试结果
+```
+go test ./tests -v -count=1 -count 参数用于设置测试运行的次数,如果是设置的两次,那么就运行两次
+```
 
 ## strconv.Itoa() strconv.FormatInt() 区别
 * Itoa 封装了 FormatInt,而且 Itoa 参数为 int, FormatInt 参数为 int64,
