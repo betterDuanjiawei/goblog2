@@ -429,6 +429,8 @@ Funcs()方法的传参是template.FuncMap 类型的 map对象, 键为模板里�
 * ORM GORM 对象关系映射来的方式抽象的操作数据库
 
 ## database/sql
+* [Go 数据库技巧：重复利用 Prepare 后的 stmt 来提高 MySQL 的执行效率](https://learnku.com/go/t/49736)
+* [sql 知识总结](https://learnku.com/courses/go-basic/1.15/database-knowledge-summary/9492)
 * database/sql 只提供了一套操作数据库的接口和规范, 可以用多种数据库驱动
 * var db *sql.DB 变量是包级别的,方便各个函数访问; sql.DB 结构体是 database/sql 封装的一个数据库对象,包含操作数据库的基本方法,通常我们把它理解为连接池对象
 * sql.SetMaxOpenConns( n) 设置最大连接数 <=0 无限制,默认为0
@@ -548,8 +550,109 @@ tmpl.Execute(w, articles)
 7. 如果你在循环执行 Query()并获取 Rows结果集,请不要使用 defer,而是直接调用 rows.Close() 因为 defer不会立即执行,而是在函数执行结束后执行
 
 ```
+* Query 和 Exec 都可以执行 SQL 语句，那他们的区别是什么呢？
+```
+Exec 只会返回最后插入 ID 和影响行数，而 Query 会返回数据表里的内容（结果集）。
+或者可以这么记：
+Query 中文译为 查询，而 Exec 译为 执行。想查询数据，使用 Query。想执行命令，使用 Exec。
+```
+* sql.Rows 的方法 Query()返回的结果
+```
+query := "SELECT * FROM articles"
+rows, err := db.Query(query)
 
+func (rs *Rows) Close() error                            //关闭结果集
+func (rs *Rows) ColumnTypes() ([]*ColumnType, error)    //返回数据表的列类型
+func (rs *Rows) Columns() ([]string, error)             //返回数据表列的名称
+func (rs *Rows) Err() error                      // 错误集
+func (rs *Rows) Next() bool                      // 游标，下一行
+func (rs *Rows) Scan(dest ...interface{}) error  // 扫描结构体
+func (rs *Rows) NextResultSet() bool            
 
+结果集在检出完 err 以后，遍历数据之前，应调用 defer rows.Close() 来关闭 SQL 连接。
+一般我们会使用 rows.Next() 来遍历数据
+循环完毕需检测是否发生错误。
+rows.Scan() 参数的顺序很重要，需要和查询的结果的 column 对应。
+```
+* sql.Row QueryRow()返回的结果
+```
+query := "SELECT * FROM ARTICLES WHERE id = ?"
+article := Article{}
+err := db.QueryRow(query, id).Scan(&article.ID, &article.Title, &article.Body)
+
+func (r *Row) Scan(dest ...interface{}) error
+sql.Row 没有 Close 方法，当我们调用 Scan() 时就会自动关闭 SQL 连接。所以为了防止忘记关闭而浪费资源，一般需要养成连着调用 Scan() 习惯：
+
+当出现请求结果不止一条数据的情况，QueryRow() 会只使用第一条数据。
+```
+* Context 上下文
+```
+func (db *DB) Exec(query string, args ...interface{}) (Result, error)
+func (db *DB) ExecContext(ctx context.Context, query string, args ...interface{}) (Result, error)
+func (db *DB) Query(query string, args ...interface{}) (*Rows, error)
+func (db *DB) QueryContext(ctx context.Context, query string, args ...interface{}) (*Rows, error)
+func (db *DB) QueryRow(query string, args ...interface{}) *Row
+func (db *DB) QueryRowContext(ctx context.Context, query string, args ...interface{}) *Row
+支持 Context 上下文的方法传参标准库 context 里的 context.Context 对象实例。
+
+在一些特殊场景里，我们需要 SQL 请求在执行还未完成时，我们可以取消他们（cancel），或者为请求设置最长执行时间（timeout），就会用到这些方法。
+
+在这里你只需要记住有这些方法即可，手动管理上下文 SQL 请求使用场景较少，篇幅考虑这里不做赘述。
+
+另外需要知道的是，所有的请求方法底层都是用其上下文版本的方法调用，且传入默认的上下文，例如 Exec() 的源码：
+
+func (db *DB) Exec(query string, args ...interface{}) (Result, error) {
+    return db.ExecContext(context.Background(), query, args...)
+}
+底层调用的是 ExecContext() 方法。context.Background() 是默认的上下文，这是一个空的 context ，我们无法对其进行取消、赋值、设置 deadline 等操作。
+```
+* sql.Tx 事务处理
+```
+两种开启事务的方法:
+func (db *DB) Begin() (*Tx, error)
+func (db *DB) BeginTx(ctx context.Context, opts *TxOptions) (*Tx, err)
+
+func (tx *Tx) Exec(query string, args ...interface{}) (Result, error)
+func (tx *Tx) ExecContext(ctx context.Context, query string, args ...interface{}) (Result, error)
+func (tx *Tx) Query(query string, args ...interface{}) (*Rows, error)
+func (tx *Tx) QueryContext(ctx context.Context, query string, args ...interface{}) (*Rows, error)
+func (tx *Tx) QueryRow(query string, args ...interface{}) *Row
+func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...interface{}) *Row
+
+// 预编译 Prepare
+func (tx *Tx) Stmt(stmt *Stmt) *Stmt
+func (tx *Tx) StmtContext(ctx context.Context, stmt *Stmt) *Stmt
+func (tx *Tx) Prepare(query string) (*Stmt, error)
+func (tx *Tx) PrepareContext(ctx context.Context, query string) (*Stmt, error)
+
+func (tx *Tx) Commit()  error 提交事务
+func (tx *Tx) Rollback() error  回滚事务
+```
+```
+func (s Service) DoSomething() (err error) {
+    tx, err := s.db.Begin()
+    if err != nil {
+        return
+    }
+    defer func(){
+        if err != nil {
+            tx.Rollback()
+            return err
+        }
+        err = tx.Commit()
+    }()
+
+    if _, err = tx.Exec(...); err != nil {
+        return err  
+    }
+    if _, err = tx.Exec(...); err != nil {
+        return err
+    }
+
+    return nil
+}
+所有的 sql操作都必须使用 tx操作,才能支持事务,如果中间使用 db.Exec()那这条语句是无法回滚的
+```
 
 ## 一般不会封装影响返回结果的逻辑处理
 ```
@@ -658,3 +761,46 @@ func init() {
 ```
 ## http.Redirect() 设置跳转
 * http.Redirect(w, r, showURL.String(), http.StatusFound)
+
+## 代码结构目录参考
+* https://github.com/golang-standards/project-layout/blob/master/README_zh.md
+
+## stretchr/testify
+* 知名的第三方测试包, 断言(assertion)功能
+* go get github.com/stretchr/testify
+* 使用
+```
+assert.NoError(t, err, "有错误发生, err不为空") 来断言没有错误发生, 第一个参数t是标准库testing的 testing.T 对象,第二个参数为错误对象 err,第三个参数为出错时候显示的信息
+assert.Equal(t, 200, resp.StatusCode, "返回状态码应为 200") 第二个参数是期待的状态码, 第三个参数是请求返回的状态码, 第四个参数是发生错误时候的错误信息,选填
+
+```
+* 常用函数汇总
+```
+// 相等
+func Equal(t TestingT, expected, actual interface{}, msgAndArgs ...interface{}) bool
+func NotEqual(t TestingT, expected, actual interface{}, msgAndArgs ...interface{}) bool
+// 是否为 nil
+func Nil(t TestingT, object interface{}, msgAndArgs ...interface{}) bool
+func NotNil(t TestingT, object interface{}, msgAndArgs ...interface{}) bool
+// 是否为空
+func Empty(t TestingT, object interface{}, msgAndArgs ...interface{}) bool
+func NotEmpty(t TestingT, object interface{}, msgAndArgs ...interface{}) bool
+// 是否存在错误
+func NoError(t TestingT, err error, msgAndArgs ...interface{}) bool
+func Error(t TestingT, err error, msgAndArgs ...interface{}) bool
+// 是否为 0 值
+func Zero(t TestingT, i interface{}, msgAndArgs ...interface{}) bool
+func NotZero(t TestingT, i interface{}, msgAndArgs ...interface{}) bool
+// 是否为布尔值
+func True(t TestingT, value bool, msgAndArgs ...interface{}) bool
+func False(t TestingT, value bool, msgAndArgs ...interface{}) bool
+// 断言长度一致
+func Len(t TestingT, object interface{}, length int, msgAndArgs ...interface{}) bool
+// 断言包含、子集、非子集
+func NotContains(t TestingT, s, contains interface{}, msgAndArgs ...interface{}) bool
+func Subset(t TestingT, list, subset interface{}, msgAndArgs ...interface{}) (ok bool)
+func NotSubset(t TestingT, list, subset interface{}, msgAndArgs ...interface{}) (ok bool)
+// 断言文件和目录存在
+func FileExists(t TestingT, path string, msgAndArgs ...interface{}) bool
+func DirExists(t TestingT, path string, msgAndArgs ...interface{}) bool
+```
