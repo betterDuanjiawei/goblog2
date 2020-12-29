@@ -380,7 +380,7 @@ with 区块外, {{ . }} 代表传入模板的数据,而在 with区块内,则代�
 
 pipeline 产生数据的操作, go的模板语法支持使用管道符号|连接多个命令
 
-注释: {{/*这是一个注释*/}} 执行的时候会忽略,可以多行,注释不能嵌套,而且必须紧贴临界符
+注释: {{/* 这是一个注释 */}} 执行的时候会忽略,可以多行,注释不能嵌套,而且必须紧贴临界符
 变量: 可以在模板中声明变量$variable := {{ . }} $variable是变量的名称,在后续的代码中可以使用该变量了
 移除空格: {{- .Name -}} {{- 移除模板内容左侧的所有空白符号, -}} 移除模板内容右侧的所有空白符号, -要紧挨{{ 和 }},和模板变量之间还有空格
 条件判断:
@@ -404,6 +404,24 @@ template.New("test").Delims("{[", "]}").ParseFile("filename.gohtml")
 有参数的调用
 {{ $article.Link 参数1 参数2 }}
 
+```
+* 注册模板函数
+```
+tmpl, err := template.New("show.gohtml").Funcs(template.FuncMap{
+    "RouteName2URL" : RouteName2URL,
+    "Int64ToString" : Int64ToString,
+}).ParseFiles("resources/views/articles/show.gohtml")
+使用 template.New()初始化,然后用 Funcs()注册函数,再使用 ParseFiles()
+New()的参数是模板名称,需要对应ParseFiles中的文件名,否则会无法正确读取到模板,最终显示空白页面
+Funcs()方法的传参是template.FuncMap 类型的 map对象, 键为模板里调用的函数名称,值为当前上下文的函数名称
+```
+* 模板中函数的调用方式
+```
+    {{/* 构建删除按钮(这是注释的写法) */}}
+    {{ $idString := Int64toString .ID }}
+    <form action="{{ RouteName2URL "articles.delete" "id" $idString }}" method="post">
+        <button type="submit" onclick="return confirm('删除动作不可逆, 请确定是否继续')">删除</button>
+    </form>
 ```
 
 ## go 操作数据库方式
