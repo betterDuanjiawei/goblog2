@@ -216,7 +216,7 @@ mux 提供的方法 mux.Vars(r)会将URL 路径参数解析为键值对应的Map
 router.HandleFunc("/", homeHandler).Methods("GET").Name("home")
 Name()方法来给路由命名,传参是路由的名称;通过这个名称来获取 URL
 homeURL, _ := router.Get("home").URL()
-articlesURL, _ := router.Get("articles.show").URL("id", 2)
+articlesURL, _ := router.Get("articles.show").URL("id", 2) //传递 articles.show url中的 id参数
 ```
 * 加载中间件 使用 gorilla/mux 的 mux.Use()方法加载中间件
 ```
@@ -425,15 +425,21 @@ template.New("test").Delims("{[", "]}").ParseFile("filename.gohtml")
 ```
 * db.Exec() 用来执行没有返回结果集的 sql语句, INSERT UPDATE DELETE CREATE等语句
 ```
+Exec()的用法和 QueryRow()类似,支持单独参数的纯文本模式与多个参数的 Prepare 模式, 在 Prepare 模式下会向 Mysql 发送两个 Sql请求
+善用 Exec()模式来防范 SQL注入攻击
 func (db *DB) Exec(query string, args ...interface{}) (Result, error)
 
 type Result interface {
     LastInsertId() (int64, error) // 使用INSERT 向数据库插入记录,数据表有自增 id时,该函数有返回值
     RowsAffected() (int64, error) // 表示影响的数据表的行数
 } 
+query := "UPDATE articles SET title = ? , body = ? WHERE id = ?"
+db.Exec(qurey, title, body, id)
 ```
-* 判断插入是否成功用 id, err = rs.lastInsertId() id >0 lastInsertID是否大于零来判断是否操作成功
+* 判断插入是否成功用 id, err = rs.lastInsertId(); id >0 lastInsertID是否大于零来判断是否操作成功
+* 判断是否更新 删除成功用 n, _ := rs.RowAffected(); n > 0 来查看影响的行数 
 * Prepare()
+
 ```
 stmt, err = db.Prepare("INSERT INTO articles (title, body) VALUES(?, ?)")
 会使用 sql连接向 mysql服务器发送一次请求,此方法返回一个*sql.Stmt指针对象
@@ -471,7 +477,19 @@ sql.Row 是一个指针变量,保有 sql连接,当调用 Scan()时候会将连�
 极其推荐这种链式调用的方式,养成良好的习惯避免掉进 sql连接不够用的坑
 ```
 * sql.ErrNoRows Scan()发现没有数据返回时候,err == sql.ErrNoRows 是未找到数据而不是报错
+* Exec()
 
+## 一般不会封装影响返回结果的逻辑处理
+```
+func getArticleByID(id string) (Article, error) {
+	query := "SELECT * FROM ARTICLES WHERE id = ?"
+	article := Article{}
+	err := db.QueryRow(query, id).Scan(&article.ID, &article.Title, &article.Body)
+
+	return article, err
+}
+这个不要处理 err, 直接返回 err,让调用方去处理
+```
 ## strconv.FormatInt(lastInsertID, 10)
 * 将 int64的数字转换为字符串,第二个参数为10进制
 
@@ -563,4 +581,5 @@ func init() {
 5 不同包的init函数按照包导入的依赖关系决定该初始化函数的执行顺序
 6 init函数不能被其他函数调用，而是在main函数执行之前，自动被调用
 ```
-
+## http.Redirect() 设置跳转
+* http.Redirect(w, r, showURL.String(), http.StatusFound)
