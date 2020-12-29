@@ -390,9 +390,20 @@ pipeline 产生数据的操作, go的模板语法支持使用管道符号|连接
 range遍历:
 {{ range pipeline }} T1 {{ end }} 如果 pipeline的长度为0,不会有任何输出
 {{ range pipeline }} T1 {{ else }} T0 {{ end }} 如果 pipeline的长度为0, 则会执行 T0
+    {{ range $key, $article := . }}
+        <li><a href=""><strong>{{ $article.ID }}</strong>: {{ $article.Title }}</a></li>
+    {{ end }}
 修改默认标识符:
 防止和 vue angularJs 冲突,修改 go模板引擎默认的标识符号:
 template.New("test").Delims("{[", "]}").ParseFile("filename.gohtml")
+
+函数调用
+{{ Function arg... }}
+方法调用
+{{ $article.Link }}
+有参数的调用
+{{ $article.Link 参数1 参数2 }}
+
 ```
 
 ## go 操作数据库方式
@@ -477,7 +488,50 @@ sql.Row 是一个指针变量,保有 sql连接,当调用 Scan()时候会将连�
 极其推荐这种链式调用的方式,养成良好的习惯避免掉进 sql连接不够用的坑
 ```
 * sql.ErrNoRows Scan()发现没有数据返回时候,err == sql.ErrNoRows 是未找到数据而不是报错
-* Exec()
+* Query() 读取结果集,读取多条数据, QueryRow()读取单条数据
+```
+func (db *DB) Query(query string, args ...interface{}) (*Rows, error)
+调用方式和 QueryRow() Exec()一致,支持单一参数的纯文本模式,以及多个参数的Prepare 模式
+纯文本模式只会发送一次请求,Prepare 模式会发送两次
+
+query := "SELECT * FROM articles"
+rows, err := db.Query(query)
+checkError(err)
+defer rows.Close()
+
+var articles []Article
+// 循环读取结果
+for rows.Next() {
+    var article Article
+    err := rows.Scan(&article.ID, &article.Title, &article.Body)
+    checkError(err)
+    articles = append(articles, article)
+}
+
+// 检查遍历时候是否存在错误
+err = rows.Err()
+checkError(err)
+
+tmpl, err := template.ParseFiles("resources/views/articles/index.gohtml")
+checkError(err)
+tmpl.Execute(w, articles)
+```
+* Query() 和 Rows需要注意的点
+```
+1. 每次 for rows.Next()后,都要记得检查下是否有错误发生,调用 rows.Err()可获取到错误
+2. 使用 rows.Next() 遍历数据,遍历到最后内部遇到 EOF错误,会自动调用 rows.Close()将 SQL连接关闭
+3. 使用 rows.Next() 遍历时,如遇错误,SQL连接页会自动关闭
+4. rows.Close()可以调用多次,使用 rows.Close()可保证 SQL连接永远时关闭的.
+5. defer rows.Close() 需在检测 err 以后调用,否则会让运行时 panic
+	rows, err := db.Query(query)
+	checkError(err)
+	defer rows.Close()
+6. 牢记在获取到结果集后,必须执行 defer rows.Close() 这样做能防止有时,你在函数里过早 return,或者其他操作忘记关闭资源.
+7. 如果你在循环执行 Query()并获取 Rows结果集,请不要使用 defer,而是直接调用 rows.Close() 因为 defer不会立即执行,而是在函数执行结束后执行
+
+```
+
+
 
 ## 一般不会封装影响返回结果的逻辑处理
 ```
@@ -490,6 +544,9 @@ func getArticleByID(id string) (Article, error) {
 }
 这个不要处理 err, 直接返回 err,让调用方去处理
 ```
+
+
+
 ## strconv.FormatInt(lastInsertID, 10)
 * 将 int64的数字转换为字符串,第二个参数为10进制
 

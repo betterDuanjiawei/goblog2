@@ -211,6 +211,15 @@ type Article struct {
 	ID          int64
 }
 
+func (a Article) Link() string {
+	showURL, err := router.Get("articles.show").URL("id", strconv.FormatInt(a.ID, 10))
+	if err != nil {
+		checkError(err)
+		return ""
+	}
+	return showURL.String()
+}
+
 func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 	id := getRouterVariable("id", r)
 	article, err := getArticleByID(id)
@@ -232,7 +241,27 @@ func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func articlesIndexHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "访问文章列表")
+	query := "SELECT * FROM articles"
+	rows, err := db.Query(query)
+	checkError(err)
+	defer rows.Close()
+
+	var articles []Article
+	// 循环读取结果
+	for rows.Next() {
+		var article Article
+		err := rows.Scan(&article.ID, &article.Title, &article.Body)
+		checkError(err)
+		articles = append(articles, article)
+	}
+
+	// 检查遍历时候是否存在错误
+	err = rows.Err()
+	checkError(err)
+
+	tmpl, err := template.ParseFiles("resources/views/articles/index.gohtml")
+	checkError(err)
+	tmpl.Execute(w, articles)
 }
 
 type ArticlesFormData struct {
