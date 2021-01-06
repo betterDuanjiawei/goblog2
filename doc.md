@@ -431,6 +431,12 @@ Funcs()方法的传参是template.FuncMap 类型的 map对象, 键为模板里�
         <button type="submit" onclick="return confirm('删除动作不可逆, 请确定是否继续')">删除</button>
     </form>
 ```
+* 分割模板
+```
+{{defind ...}}是定义模板, {{template ...}}是使用模板
+{{defind ...}}跟着的参数是模板的名称,而{{template ...}}有两个参数,第一个是模板,第二个是传给模板使用的数据
+{{end}} 定义模板用 end结束
+```
 
 ## go 操作数据库方式
 * database/sql 用硬编码 sql语句来执行
