@@ -864,3 +864,52 @@ func FormatInt(i int64, base int) string {
 	return s
 }
 ```
+
+## gorm
+* go get -u gorm.io/gorm 安装 gorm
+* go get -u gorm.io/driver/mysql 安装 gorm的 mysql 驱动
+* var DB *gorm.DB gorm.DB 对象
+```
+// DB gorm.DB 对象
+var DB *gorm.DB
+
+// ConnectDB 初始化模型
+func ConnectDB() *gorm.DB {
+
+    var err error
+
+    config := mysql.New(mysql.Config{
+        DSN: "root:secret@tcp(127.0.0.1:3306)/goblog?charset=utf8&parseTime=True&loc=Local",
+    })
+
+    // 准备数据库连接池
+    DB, err = gorm.Open(config, &gorm.Config{})
+
+    logger.LogError(err)
+
+    return DB
+}
+```
+* First()是 gorm.DB提供的用以从结果集中获取第一条数据的查询方法
+* .Error 是 gorm 提供的错误处理机制
+* 在 First() Last() Take() 方法找不到记录时候,gorm会返回ErrRecordNotFound 错误
+```
+if err := model.DB.First(&article, id).Error; err != nil {
+    return article, err
+}
+```
+* gorm.io/gorm/logger 打印 sql语句记录
+```
+gorm.Config{} 允许我们为设置初始化配置信息,其中 Logger 可用来指定和配置gorm 的调试器
+LogMode里填写的是日志级别:
+Silent —— 静默模式，不打印任何信息
+Error —— 发生错误了才打印
+Warn —— 发生警告级别以上的错误才打印
+Info —— 打印所有信息，包括 SQL 语句
+默认是 Warn,修改为 Info
+DB, err = gorm.Open(config, &gorm.Config{
+    Logger: gormlogger.Default.LogMode(gormlogger.Info),
+})
+```
+
+
