@@ -237,7 +237,15 @@ router.NewRouter().StrictSlash(true)
 URL 校正301跳转,第二次会是没有/的 url,处理 get请求可以,但是处理 post请求,301跳转之后会变成 get请求
 ```
 * gorilla执行顺序,先匹配路由,再执行中间件
+* r.PathPrefix("xxx").Handler()
+```
+// 静态资源
+r.PathPrefix("/css/").Handler(http.FileServer(http.Dir("./public")))
+r.PathPrefix("/js/").Handler(http.FileServer(http.Dir("./public")))
 
+PathPrefix() 匹配参数里 /css/前缀的的 URI,链式调用指定处理器为:http.FileServer()
+http.FileServer() 是文件目录处理器,参数http.Dir("./public") 是指定在此目录下寻找文件
+```
 
 ## GOMODULE
 * go.mod go.sum 分别相当于 php的 composer.json 和 composer.lock
@@ -917,4 +925,9 @@ result := model.DB.Save(&article)
 result.RowsAffected 更新的记录数
 result.Error 更新的错误
 ```
+
+## 页面标头
+* 渲染模板的调用 tmpl.Execute(w, articles)，Execute() 在执行时会设置正确的 HTML 标头。
+* 而解析静态文件所用到的 http.FileServer() 内部也会根据文件后缀设置正确的标头。
+所以标头这块不需要我们干预。
 
