@@ -911,5 +911,10 @@ DB, err = gorm.Open(config, &gorm.Config{
     Logger: gormlogger.Default.LogMode(gormlogger.Info),
 })
 ```
-
+* Save() 更新处理
+```
+result := model.DB.Save(&article)
+result.RowsAffected 更新的记录数
+result.Error 更新的错误
+```
 
