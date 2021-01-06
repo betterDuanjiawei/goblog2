@@ -10,6 +10,8 @@ import (
 	"gorm.io/gorm"
 	"html/template"
 	"net/http"
+	"strconv"
+	"unicode/utf8"
 )
 
 var db *sql.DB
@@ -51,4 +53,75 @@ func (*ArticlesController) Index(w http.ResponseWriter, r *http.Request) {
 		logger.LogError(err)
 		tmpl.Execute(w, articles)
 	}
+}
+
+type ArticlesFormData struct {
+	Title, Body string
+	URL         string
+	Errors      map[string]string
+}
+
+func (*ArticlesController) Create(w http.ResponseWriter, r *http.Request) {
+	storeURL := route.Name2URL("articles.store")
+	data := ArticlesFormData{
+		Title:  "",
+		Body:   "",
+		URL:    storeURL,
+		Errors: nil,
+	}
+
+	tmpl, err := template.ParseFiles("resources/views/articles/create.gohtml")
+	if err != nil {
+		panic(err)
+	}
+	tmpl.Execute(w, data)
+}
+
+func (*ArticlesController) Store(w http.ResponseWriter, r *http.Request) {
+	title := r.PostFormValue("title")
+	body := r.PostFormValue("body")
+
+	errors := validateArticleFormData(title, body)
+	if len(errors) == 0 {
+		_article := article.Article{
+			Title: title,
+			Body:  body,
+		}
+		_article.Create()
+		if _article.ID > 0 {
+			fmt.Fprint(w, "文章 ID:"+strconv.FormatInt(_article.ID, 10))
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "服务器内部错误")
+		}
+	} else {
+		storeURL := route.Name2URL("articles.store")
+
+		data := ArticlesFormData{
+			Title:  title,
+			Body:   body,
+			URL:    storeURL,
+			Errors: errors,
+		}
+
+		tmpl, err := template.ParseFiles("resources/views/articles/create.gohtml")
+		logger.LogError(err)
+		tmpl.Execute(w, data)
+	}
+}
+
+func validateArticleFormData(title, body string) map[string]string {
+	errors := make(map[string]string)
+	if title == "" {
+		errors["title"] = "标题不能为空"
+	} else if utf8.RuneCountInString(title) < 3 || utf8.RuneCountInString(title) > 10 {
+		errors["title"] = "标题长度需介于 3-40"
+	}
+
+	if body == "" {
+		errors["body"] = "内容不能为空"
+	} else if utf8.RuneCountInString(body) < 10 {
+		errors["body"] = "内容长度需大于或等于10个字符"
+	}
+	return errors
 }
