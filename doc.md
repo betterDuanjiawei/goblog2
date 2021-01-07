@@ -961,3 +961,6 @@ indent_size = 2
 * go提供的统一不同系统的路径处理包
 * filepath.Glob()会生成与传参匹配的文件 slice
 
+## strings.Replace() 替换
+* func Replace(s, old, new string, n int) string n是允许替换的次数,设置-1意味着替换所有
+
