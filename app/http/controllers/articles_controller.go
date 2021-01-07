@@ -45,14 +45,14 @@ func (*ArticlesController) Index(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type ArticlesFormData struct {
-	Title, Body string
-	Article     article.Article
-	Errors      map[string]string
-}
+//type ArticlesFormData struct {
+//	Title, Body string
+//	Article     article.Article
+//	Errors      map[string]string
+//}
 
 func (*ArticlesController) Create(w http.ResponseWriter, r *http.Request) {
-	view.Render(w, ArticlesFormData{}, "articles.create", "articles._form_field")
+	view.Render(w, view.D{}, "articles.create", "articles._form_field")
 }
 
 func (*ArticlesController) Store(w http.ResponseWriter, r *http.Request) {
@@ -73,10 +73,10 @@ func (*ArticlesController) Store(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, "服务器内部错误")
 		}
 	} else {
-		view.Render(w, ArticlesFormData{
-			Title:  title,
-			Body:   body,
-			Errors: errors,
+		view.Render(w, view.D{
+			"title":  title,
+			"body":   body,
+			"errors": errors,
 		}, "articles.create", "articles._form_field")
 	}
 }
@@ -111,11 +111,11 @@ func (*ArticlesController) Edit(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, "500 服务器内部错误")
 		}
 	} else {
-		view.Render(w, ArticlesFormData{
-			Title:   _article.Title,
-			Body:    _article.Body,
-			Article: _article,
-			Errors:  nil,
+		view.Render(w, view.D{
+			"title":   _article.Title,
+			"body":    _article.Body,
+			"article": _article,
+			"errors":  nil,
 		}, "articles.edit", "articles._form_field")
 	}
 }
@@ -157,11 +157,11 @@ func (*ArticlesController) Update(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, "您没有做任何更改! ")
 			}
 		} else {
-			view.Render(w, ArticlesFormData{
-				Title:   title,
-				Body:    body,
-				Article: _article,
-				Errors:  errors,
+			view.Render(w, view.D{
+				"title":   title,
+				"body":    body,
+				"article": _article,
+				"errors":  errors,
 			}, "articles.edit", "articles._form_field")
 		}
 	}
