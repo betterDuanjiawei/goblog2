@@ -439,6 +439,8 @@ Funcs()方法的传参是template.FuncMap 类型的 map对象, 键为模板里�
 ```
 * template.ParseFile(newFile...) 是可变参数方法,可以解析多个参数, slice 后加...可以实现自动解包,
 * func (t *Template) ExecuteTemplate(wr io.Writer, name string, data interface{}) error {} 第一个参数和最后一个参数和 Execute()一致,中间的参数是我们想要渲染的模板名称,而不是模板文件名称
+* {{ if .Errors.title }} is-invalid {{ end }}
+
 
 ## go 操作数据库方式
 * database/sql 用硬编码 sql语句来执行
