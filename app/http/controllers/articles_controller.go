@@ -58,7 +58,6 @@ func (*ArticlesController) Create(w http.ResponseWriter, r *http.Request) {
 func (*ArticlesController) Store(w http.ResponseWriter, r *http.Request) {
 	title := r.PostFormValue("title")
 	body := r.PostFormValue("body")
-
 	errors := validateArticleFormData(title, body)
 	if len(errors) == 0 {
 		_article := article.Article{
@@ -74,9 +73,9 @@ func (*ArticlesController) Store(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		view.Render(w, view.D{
-			"title":  title,
-			"body":   body,
-			"errors": errors,
+			"Title":  title,
+			"Body":   body,
+			"Errors": errors,
 		}, "articles.create", "articles._form_field")
 	}
 }
@@ -97,6 +96,12 @@ func validateArticleFormData(title, body string) map[string]string {
 	return errors
 }
 
+type ArticlesFormData struct {
+	Title, Body string
+	Article     article.Article
+	Errors      map[string]string
+}
+
 func (*ArticlesController) Edit(w http.ResponseWriter, r *http.Request) {
 	id := route.GetRouteVariable("id", r)
 	_article, err := article.Get(id)
@@ -111,11 +116,22 @@ func (*ArticlesController) Edit(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, "500 服务器内部错误")
 		}
 	} else {
+		fmt.Println(view.D{
+			"Title":   _article.Title,
+			"Body":    _article.Body,
+			"Article": _article,
+			"Errors":  nil,
+		}, ArticlesFormData{
+			Title:   _article.Title,
+			Body:    _article.Body,
+			Article: _article,
+			Errors:  nil,
+		})
 		view.Render(w, view.D{
-			"title":   _article.Title,
-			"body":    _article.Body,
-			"article": _article,
-			"errors":  nil,
+			"Title":   _article.Title,
+			"Body":    _article.Body,
+			"Article": _article,
+			"Errors":  `nil`,
 		}, "articles.edit", "articles._form_field")
 	}
 }
@@ -158,10 +174,10 @@ func (*ArticlesController) Update(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			view.Render(w, view.D{
-				"title":   title,
-				"body":    body,
-				"article": _article,
-				"errors":  errors,
+				"Title":   title,
+				"Body":    body,
+				"Article": _article,
+				"Errors":  errors,
 			}, "articles.edit", "articles._form_field")
 		}
 	}

@@ -936,6 +936,16 @@ result.RowsAffected 更新的记录数
 result.Error 更新的错误
 ```
 
+* AutoMirgate() 自动迁移建表
+```
+func migrate(db *gorm.DB) {
+	db.AutoMigrate(&user.User{}, &article.Article{})
+}
+
+遇到的报错:Error 1071: Specified key was too long; max key length is 767 bytes
+解决方法:https://blog.csdn.net/u010931123/article/details/102801269
+```
+
 ## 页面标头
 * 渲染模板的调用 tmpl.Execute(w, articles)，Execute() 在执行时会设置正确的 HTML 标头。
 * 而解析静态文件所用到的 http.FileServer() 内部也会根据文件后缀设置正确的标头。
