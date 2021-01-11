@@ -967,6 +967,9 @@ trim_trailing_whitespace = true
 indent_style = space
 ; 缩进长度为两个空格
 indent_size = 2
+
+`gorm:"-"` 设置 gorm 在读写时跳过该字段
+GORM 默认会将键小写化作为字段名称，column 项可去除，另外默认是允许 NULL 的，故 default:NULL 项也可去除。
 ```
 
 ## filepath 包
@@ -976,3 +979,21 @@ indent_size = 2
 ## strings.Replace() 替换
 * func Replace(s, old, new string, n int) string n是允许替换的次数,设置-1意味着替换所有
 
+## 安装 govalidator
+* 比较知名的有 asaskevich/govalidator 和 thedevsaddam/govalidator ，两个都值得使用，后者借鉴了 Laravel，比较简单易用
+* thedevsaddam/govalidator
+```
+安装
+go get -u  github.com/thedevsaddam/govalidator
+项目文档
+https://github.com/thedevsaddam/govalidator#validation-rules
+required	字段必须有值
+alpha_num	只允许英文字母和数字混合
+between:3,20	字段长度介于 3 ~ 20 之间
+min:4	最少四个字符
+max:30	最大 30 个字符
+email	必须为 Email
+```
+
+## json.MarshalIndent() 
+* json.MarshalIndent()用来将 go对象格式转换为json字符串,并加上合理的缩进
