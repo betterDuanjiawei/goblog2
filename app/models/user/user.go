@@ -8,8 +8,8 @@ import (
 type User struct {
 	models.BaseModel
 
-	Name            string `gorm:"type:varchar(150);not null;unique" valid:"name"`
-	Email           string `gorm:"type:varchar(150);unique; vaild:"email"`
-	Password        string `gorm:"type:varchar(150)" valid:"password"`
+	Name            string `gorm:"type:varchar(175);not null;unique" valid:"name"`
+	Email           string `gorm:"type:varchar(175);unique;" valid:"email"`
+	Password        string `gorm:"type:varchar(175)" valid:"password"`
 	PasswordConfirm string `gorm:"-" valid:"password_confirm"`
 }

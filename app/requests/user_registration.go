@@ -1,11 +1,14 @@
 package requests
 
 import (
-	"github.com/thedevsaddam/govalidator"
 	"goblog2/app/models/user"
+
+	"github.com/thedevsaddam/govalidator"
 )
 
+// ValidateRegistrationForm 验证表单，返回 errs 长度等于零即通过
 func ValidateRegistrationForm(data user.User) map[string][]string {
+
 	// 1. 定制认证规则
 	rules := govalidator.MapData{
 		"name":             []string{"required", "alpha_num", "between:3,20"},
@@ -47,7 +50,7 @@ func ValidateRegistrationForm(data user.User) map[string][]string {
 	// 4. 开始验证
 	errs := govalidator.New(opts).ValidateStruct()
 
-	// 5. 因 govalidator 不支持 password_comfirm 验证，我们自己写一个
+	// 5. 因 govalidator 不支持 password_confirm 验证，我们自己写一个
 	if data.Password != data.PasswordConfirm {
 		errs["password_confirm"] = append(errs["password_confirm"], "两次输入密码不匹配！")
 	}
